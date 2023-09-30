@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.IRControl" parent="Theme.AppCompat.Light">
+        <!-- Primary brand color (light gray). -->
+        <item name="colorPrimary">@color/grey_bg</item>
+        <item name="colorPrimaryVariant">@color/light_gray_variant</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:textColorPrimary">@color/black</item>
+
+    </style>
+</resources>
