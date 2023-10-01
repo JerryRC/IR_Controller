@@ -13,21 +13,22 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public class RemoteControlView extends View {
 
-    private static final int BUTTON_UP = 1;
-    private static final int BUTTON_DOWN = 2;
-    private static final int BUTTON_LEFT = 3;
-    private static final int BUTTON_RIGHT = 4;
-    private static final int BUTTON_OK = 5;
-    private static final int BUTTON_NONE = 0;
-    private static final int BUTTON_TOP_LEFT = 6;
-    private static final int BUTTON_TOP_RIGHT = 7;
-    private static final int BUTTON_BOTTOM_LEFT = 8;
-    private static final int BUTTON_BOTTOM_RIGHT = 9;
+    static final int BUTTON_UP = 1;
+    static final int BUTTON_DOWN = 2;
+    static final int BUTTON_LEFT = 3;
+    static final int BUTTON_RIGHT = 4;
+    static final int BUTTON_OK = 5;
+    static final int BUTTON_NONE = 0;
+    static final int BUTTON_TOP_LEFT = 6;
+    static final int BUTTON_TOP_RIGHT = 7;
+    static final int BUTTON_BOTTOM_LEFT = 8;
+    static final int BUTTON_BOTTOM_RIGHT = 9;
     private final Paint mPaintCenter;
     private final Paint mPaintOuterDown;
     private final Paint mPaintOuterLeft;
@@ -35,11 +36,11 @@ public class RemoteControlView extends View {
     private final Paint mPaintOuterRight;
     private final Paint textPaint;
     private final Paint unicodePaint;
-    Map<String, Paint> buttonPaintMap;
     private final RectF cenRect;
     private final RectF dirRect;
     private final float buttonRadius = 100;
     private final float offset = 200;
+    Map<String, Paint> buttonPaintMap;
     String colorCenterShadow = "#EEE0E0E0";
     String colorCenterOriginal = "#FFE8E8E8";
     String colorCenterPress = "#FFCCCCCC";
@@ -60,6 +61,8 @@ public class RemoteControlView extends View {
     String top_right_btn_text = "□";
     String bottom_left_btn_text = "□";
     String bottom_right_btn_text = "□";
+    List<int[]> signals = null;
+    private RemoteClickListener clickListener = null;
 
     public RemoteControlView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -108,8 +111,9 @@ public class RemoteControlView extends View {
         unicodePaint.setAntiAlias(true);
         unicodePaint.setTextAlign(Paint.Align.CENTER);
 
+        // 绘制图形
         buttonPaintMap = new HashMap<>();
-        for (String n: new String[]{"tl", "tr", "bl", "br"}) {
+        for (String n : new String[]{"tl", "tr", "bl", "br"}) {
             Paint p = new Paint();
             p.setColor(Color.parseColor(colorOuterOriginal));
             p.setTextSize(40);
@@ -158,19 +162,24 @@ public class RemoteControlView extends View {
 
         // 添加文字
         canvas.drawText(center_btn_text, cenRect.centerX(), cenRect.centerY() - cenText_offset, textPaint);
-        canvas.drawText(top_btn_unicode, dirRect.centerX(), dirRect.centerY() - radius_out * 3 / 8f -cenUnicode_offset, unicodePaint);
-        canvas.drawText(bottom_btn_unicode, dirRect.centerX(), dirRect.centerY() + radius_out * 3 / 8f-cenUnicode_offset, unicodePaint);
-        canvas.drawText(left_btn_unicode, dirRect.centerX() - radius_out * 3 / 8f, dirRect.centerY()-cenUnicode_offset, unicodePaint);
-        canvas.drawText(right_btn_unicode, dirRect.centerX() + radius_out * 3 / 8f, dirRect.centerY()-cenUnicode_offset, unicodePaint);
+        canvas.drawText(top_btn_unicode, dirRect.centerX(), dirRect.centerY() - radius_out * 3 / 8f - cenUnicode_offset, unicodePaint);
+        canvas.drawText(bottom_btn_unicode, dirRect.centerX(), dirRect.centerY() + radius_out * 3 / 8f - cenUnicode_offset, unicodePaint);
+        canvas.drawText(left_btn_unicode, dirRect.centerX() - radius_out * 3 / 8f, dirRect.centerY() - cenUnicode_offset, unicodePaint);
+        canvas.drawText(right_btn_unicode, dirRect.centerX() + radius_out * 3 / 8f, dirRect.centerY() - cenUnicode_offset, unicodePaint);
 
         // 绘制左上角按钮
-        canvas.drawCircle(cenRect.left-offset, cenRect.top-offset, buttonRadius, Objects.requireNonNull(buttonPaintMap.get("tl")));
+        canvas.drawCircle(cenRect.left - offset, cenRect.top - offset, buttonRadius, Objects.requireNonNull(buttonPaintMap.get("tl")));
         // 绘制右上角按钮
         canvas.drawCircle(cenRect.right + offset, cenRect.top - offset, buttonRadius, Objects.requireNonNull(buttonPaintMap.get("tr")));
         // 绘制左下角按钮
         canvas.drawCircle(cenRect.left - offset, cenRect.bottom + offset, buttonRadius, Objects.requireNonNull(buttonPaintMap.get("bl")));
         // 绘制右下角按钮
         canvas.drawCircle(cenRect.right + offset, cenRect.bottom + offset, buttonRadius, Objects.requireNonNull(buttonPaintMap.get("br")));
+
+        canvas.drawText(top_left_btn_text, cenRect.left - offset, cenRect.top - offset - cenUnicode_offset, unicodePaint);
+        canvas.drawText(top_right_btn_text, cenRect.right + offset, cenRect.top - offset - cenUnicode_offset, unicodePaint);
+        canvas.drawText(bottom_left_btn_text, cenRect.left - offset, cenRect.bottom + offset - cenUnicode_offset, unicodePaint);
+        canvas.drawText(bottom_right_btn_text, cenRect.right + offset, cenRect.bottom + offset - cenUnicode_offset, unicodePaint);
     }
 
     // 接下来要为上面的五个图形添加点击事件
@@ -183,7 +192,7 @@ public class RemoteControlView extends View {
             mPaintOuterLeft.setColor(Color.parseColor(colorOuterOriginal));
             mPaintOuterUp.setColor(Color.parseColor(colorOuterOriginal));
             mPaintOuterRight.setColor(Color.parseColor(colorOuterOriginal));
-            for (Paint p: buttonPaintMap.values()) {
+            for (Paint p : buttonPaintMap.values()) {
                 p.setColor(Color.parseColor(colorOuterOriginal));
             }
 
@@ -306,26 +315,9 @@ public class RemoteControlView extends View {
     public boolean performClick() {
         super.performClick();
 
-        if (nowClick == BUTTON_UP) {
-            Log.d("click", "click up");
-        } else if (nowClick == BUTTON_DOWN) {
-            Log.d("click", "click down");
-        } else if (nowClick == BUTTON_LEFT) {
-            Log.d("click", "click left");
-        } else if (nowClick == BUTTON_RIGHT) {
-            Log.d("click", "click right");
-        } else if (nowClick == BUTTON_OK) {
-            Log.d("click", "click ok");
-        } else if (nowClick == BUTTON_TOP_LEFT) {
-            Log.d("click", "click top left");
-        } else if (nowClick == BUTTON_TOP_RIGHT) {
-            Log.d("click", "click top right");
-        } else if (nowClick == BUTTON_BOTTOM_LEFT) {
-            Log.d("click", "click bottom left");
-        } else if (nowClick == BUTTON_BOTTOM_RIGHT) {
-            Log.d("click", "click bottom right");
+        if (clickListener != null) {
+            clickListener.onRemoteClick();
         }
-
         return true;
     }
 
@@ -390,10 +382,12 @@ public class RemoteControlView extends View {
         }
     }
 
-    public void initButton(Key[] keys, ConsumerIrManager irManager, int IR_CARRIER_FREQUENCY) {
-        if (irManager == null) {
-            return;
-        }
+    private void setRemoteClickListener(RemoteClickListener listener) {
+        this.clickListener = listener;
+    }
+
+    public void initButton(Key[] keys, List<int[]> s, RemoteClickListener listener) {
+
         top_left_btn_text = keys[17].getName();
         top_right_btn_text = keys[18].getName();
         bottom_left_btn_text = keys[19].getName();
@@ -403,11 +397,8 @@ public class RemoteControlView extends View {
         right_btn_unicode = keys[23].getName();
         bottom_btn_unicode = keys[24].getName();
         center_btn_text = keys[25].getName();
-//        TODO: 要写一个回调函数把这个地方的 OnClick 事件实现
-//        for (int i = 17; i < keys.length; i++) {
-//            Key key = keys[i];
-//            VibrateHelp.simpleVibrate(this.getContext(), 60);
-//            irManager.transmit(IR_CARRIER_FREQUENCY, signal);
-//        }
+
+        signals = s;
+        setRemoteClickListener(listener);
     }
 }

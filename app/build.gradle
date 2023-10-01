@@ -16,6 +16,12 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    android.applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach {
+            outputFileName = "奇声遥控器_v${versionName}.apk"
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false

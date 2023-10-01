@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
@@ -105,8 +106,45 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         // 9个自定义按键
-        RemoteControlView remoteControlView = findViewById(R.id.remote_control_view);
-        remoteControlView.initButton(keys, irManager, IR_CARRIER_FREQUENCY);
+        RemoteControlView rc = findViewById(R.id.remote_control_view);
+        if (canEmit) {
+            List<int[]> signals = new ArrayList<>();
+            for (int i = 17; i < keys.length; i++) {
+                String[] pulse = keys[i].getPulse().split(",");
+                int[] signal = new int[pulse.length];
+                for (int j = 0; j < pulse.length; j++) {
+                    signal[j] = Integer.parseInt(pulse[j]);
+                }
+                signals.add(signal);
+            }
+
+            rc.initButton(keys, signals, () -> {
+                if (rc.nowClick == RemoteControlView.BUTTON_UP) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(4));
+                } else if (rc.nowClick == RemoteControlView.BUTTON_DOWN) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(7));
+                } else if (rc.nowClick == RemoteControlView.BUTTON_LEFT) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(5));
+                } else if (rc.nowClick == RemoteControlView.BUTTON_RIGHT) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(6));
+                } else if (rc.nowClick == RemoteControlView.BUTTON_OK) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(8));
+                } else if (rc.nowClick == RemoteControlView.BUTTON_TOP_LEFT) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(0));
+                } else if (rc.nowClick == RemoteControlView.BUTTON_TOP_RIGHT) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(1));
+                } else if (rc.nowClick == RemoteControlView.BUTTON_BOTTOM_LEFT) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(2));
+                } else if (rc.nowClick == RemoteControlView.BUTTON_BOTTOM_RIGHT) {
+                    irManager.transmit(IR_CARRIER_FREQUENCY, rc.signals.get(3));
+                } else {
+                    return;
+                }
+                VibrateHelp.simpleVibrate(rc.getContext(), 60);
+            });
+        }
+
+
     }
 
     private void readUserData() throws IOException {
@@ -115,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
         BufferedReader br = new BufferedReader(isr);
         String line;
         StringBuilder builder = new StringBuilder();
-        while ((line = br.readLine())!=null) {
+        while ((line = br.readLine()) != null) {
             builder.append(line);
         }
         br.close();
@@ -124,11 +162,11 @@ public class MainActivity extends AppCompatActivity {
         JsonParser parser = new JsonParser();
         JsonElement el = parser.parse(builder.toString());
         JsonArray array = null;
-        if(el.isJsonArray()) {
+        if (el.isJsonArray()) {
             array = el.getAsJsonArray();
         }
 
-        if (array == null || array.size()==0) {
+        if (array == null || array.size() == 0) {
             throw new IOException();
         }
         irConfigs = new ArrayList<>();
